@@ -1,7 +1,8 @@
 <h1 align="center">Proyecto Ondaakin</h1>
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/15e5d31b-d17e-4c56-94b7-f48b3b79ca2e" alt="Diseño sin título(5)" width="600"/>
+  <img src="https://github.com/user-attachments/assets/136496df-295a-460a-89ad-fc2f3096ec02" alt="ONDAAKIN LOGO" width="600"/>
+
 </div>
 
 ## 📌 Descripción general del proyecto
