@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid d-flex flex-wrap justify-content-left">
+    {% for nombre_imagen in imagenes %}
+    <div class="col-md-4 mb-3 p-2">
+        <a href="{% url 'foto_detalle' nombre=nombre_imagen %}" class="text-decoration-none"> 
+            <div class="card">
+                <img 
+                    src="{% url 'proxy_imagen' nombre_imagen=nombre_imagen %}" 
+                    class="card-img-top"
+                    alt="{{ nombre_imagen }}"
+                    style="max-height: 300px; object-fit: cover;"
+                >
+                <div class="card-body">
+                    <p class="card-text text-muted">{{ nombre_imagen }}</p>
+                </div>
+            </div>
+        </a> 
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

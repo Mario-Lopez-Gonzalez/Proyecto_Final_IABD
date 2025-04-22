@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!-- Put site-specific property overrides in this file. -->
+<configuration>
+  <property>
+    <name>fs.default.name</name>
+    <value>hdfs://namenode:9000</value>
+  </property>
+  <property>
+    <name>fs.permissions.umask-mode</name>
+    <value>0000</value>
+    <description>Umask para nuevos archivos y directorios. Establecer en 0000 para permisos completos (777).</description>
+  </property>
+</configuration>

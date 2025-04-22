@@ -1,0 +1,75 @@
+<!-- chat_content.html -->
+<div id="chat-messages"></div>
+
+<form id="chat-form" onsubmit="sendMessage(event)">
+  <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." required>
+  <button type="submit">Enviar</button>
+</form>
+
+<script>
+  // Cargar mensajes al iniciar
+  document.addEventListener('DOMContentLoaded', () => {
+    loadMessages();
+  });
+
+  // Cargar mensajes desde localStorage y renderizar
+  function loadMessages() {
+    const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = ''; // Limpiar
+
+    messages.forEach(msg => {
+      const questionElem = document.createElement('p');
+      questionElem.innerHTML = `<strong>Tú:</strong> ${msg.question}`;
+      
+      const answerElem = document.createElement('p');
+      answerElem.innerHTML = `<strong>RAG:</strong> ${msg.answer}`;
+      
+      chatMessages.append(questionElem, answerElem);
+    });
+
+    // Scroll automático al final
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Guardar mensaje en localStorage
+  function saveMessage(question, answer) {
+    const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+    messages.push({ question, answer });
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
+  }
+
+  // Enviar mensaje al backend
+  function sendMessage(event) {
+    event.preventDefault();
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Bloquear el formulario durante el envío
+    input.disabled = true;
+
+    $.ajax({
+      url: '{% url "rag_send_message" %}',
+      type: 'POST',
+      data: {
+        'message': message,
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+      },
+      success: (response) => {
+        saveMessage(message, response.message);
+        loadMessages(); // Actualizar vista
+        input.value = '';
+      },
+      error: (error) => {
+        console.error("Error:", error);
+        alert("Error al enviar el mensaje");
+      },
+      complete: () => {
+        input.disabled = false;
+        input.focus();
+      }
+    });
+  }
+</script>

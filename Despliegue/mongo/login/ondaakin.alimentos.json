@@ -1,0 +1,160 @@
+[{
+  "_id": 0,
+  "nombre": "Tomate"
+},
+{
+  "_id": 1,
+  "nombre": "Zanahoria"
+},
+{
+  "_id": 2,
+  "nombre": "Ajo"
+},
+{
+  "_id": 3,
+  "nombre": "Calabacín"
+},
+{
+  "_id": 4,
+  "nombre": "Patata"
+},
+{
+  "_id": 5,
+  "nombre": "Pimiento Verde"
+},
+{
+  "_id": 6,
+  "nombre": "Pimiento Rojo"
+},
+{
+  "_id": 7,
+  "nombre": "Puerro"
+},
+{
+  "_id": 8,
+  "nombre": "Berro"
+},
+{
+  "_id": 9,
+  "nombre": "Lechuga"
+},
+{
+  "_id": 10,
+  "nombre": "Arroz"
+},
+{
+  "_id": 11,
+  "nombre": "Arroz con guisantes"
+},
+{
+  "_id": 12,
+  "nombre": "Bacalao"
+},
+{
+  "_id": 13,
+  "nombre": "Batata dulce"
+},
+{
+  "_id": 14,
+  "nombre": "Remolacha"
+},
+{
+  "_id": 15,
+  "nombre": "Brócoli"
+},
+{
+  "_id": 16,
+  "nombre": "Jurel"
+},
+{
+  "_id": 17,
+  "nombre": "Corvina"
+},
+{
+  "_id": 18,
+  "nombre": "Chuleta"
+},
+{
+  "_id": 19,
+  "nombre": "Col lombarda"
+},
+{
+  "_id": 20,
+  "nombre": "Coliflor"
+},
+{
+  "_id": 21,
+  "nombre": "Guisante"
+},
+{
+  "_id": 22,
+  "nombre": "Espinaca"
+},
+{
+  "_id": 23,
+  "nombre": "Pollo"
+},
+{
+  "_id": 24,
+  "nombre": "Pollo con champiñones"
+},
+{
+  "_id": 25,
+  "nombre": "Lomo"
+},
+{
+  "_id": 26,
+  "nombre": "Pasta"
+},
+{
+  "_id": 27,
+  "nombre": "Pasta de coditos"
+},
+{
+  "_id": 28,
+  "nombre": "Pasta fusilli"
+},
+{
+  "_id": 29,
+  "nombre": "Maíz"
+},
+{
+  "_id": 30,
+  "nombre": "Huevo"
+},
+{
+  "_id": 31,
+  "nombre": "Pepino"
+},
+{
+  "_id": 32,
+  "nombre": "Puré"
+},
+{
+  "_id": 33,
+  "nombre": "Gallineta"
+},
+{
+  "_id": 34,
+  "nombre": "Repollo"
+},
+{
+  "_id": 35,
+  "nombre": "Salmón"
+},
+{
+  "_id": 36,
+  "nombre": "Salchicha"
+},
+{
+  "_id": 37,
+  "nombre": "Salchicha silesiana"
+},
+{
+  "_id": 38,
+  "nombre": "Pan"
+},
+{
+  "_id": 39,
+  "nombre": "Queso crema"
+}]

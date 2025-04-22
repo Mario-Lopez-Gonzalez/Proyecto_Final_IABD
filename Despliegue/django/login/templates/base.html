@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Proyecto OndAAkin{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/icon.png' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .content {
+            flex: 1;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 50px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+        #chat-header {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+        }
+        #chat-content {
+            padding: 10px;
+            max-height: 25em;
+            overflow-y: auto;
+            background: #f9f9f9;
+            display: block;
+        }
+        #chat-container.expanded {
+            width: 20em;
+            height: 30em;
+        }
+    </style>
+</head>
+<body>
+    {% include '_navbar.html' %}
+    <div class="content"> 
+        {% block content %}
+        {% endblock %}
+    </div>
+    {% include '_footer.html' %}
+
+    <div id="chat-container">
+        <div id="chat-header" onclick="toggleChat()">
+            💬 🤖<span id="chat-toggle-icon">▼</span>
+        </div>
+        <div id="chat-content"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const chatContainer = document.getElementById("chat-container");
+            const chatToggleIcon = document.getElementById("chat-toggle-icon");
+
+            if (localStorage.getItem("chatExpanded") === "true") {
+                chatContainer.classList.add("expanded");
+                chatToggleIcon.textContent = "▲";
+                loadChat();
+            }
+        });
+
+        function loadChat() {
+            $.ajax({
+                url: '{% url "rag_chat" %}',
+                type: 'GET',
+                success: function(data) {
+                    $('#chat-content').html(data);
+                },
+                error: function(error) {
+                    console.log("Error al cargar el chat", error);
+                }
+            });
+        }
+
+        function toggleChat() {
+            const chatContainer = document.getElementById("chat-container");
+            const chatToggleIcon = document.getElementById("chat-toggle-icon");
+            chatContainer.classList.toggle("expanded");
+
+            if (chatContainer.classList.contains("expanded")) {
+                chatToggleIcon.textContent = "▲";
+                localStorage.setItem("chatExpanded", "true");
+                loadChat();
+            } else {
+                chatToggleIcon.textContent = "▼";
+                localStorage.setItem("chatExpanded", "false");
+            }
+        }
+    </script>
+</body>
+</html>

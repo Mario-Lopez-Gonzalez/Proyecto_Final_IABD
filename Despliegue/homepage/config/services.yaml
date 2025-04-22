@@ -1,0 +1,30 @@
+- Página Web:
+    - Django Python 3.12:
+        href: http://localhost:43001
+        description: Página web con Django
+        icon: /images/python.png
+
+- Bases de Datos:
+    - MongoDB:
+        href: http://localhost:43002
+        description: MongoDB para datos del modelo, visualizar imágenes en la web, ...
+        icon: /images/mongodb.png
+    - PostgreSQL: 
+        href: http://localhost:43004
+        description: PostgreSQL para datos de configuración de Metabase, dashboards, etc.
+        icon: /images/postgresql.png
+    - Hadoop :
+        href: http://localhost:43007
+        description: Hadoop (namenode, resourcemanager y workers 1 al 3) para datos masivos, modelos de IA y más
+        icon: /images/hadoop.png
+
+- Dashboard:
+    - Metabase:
+        href: http://localhost:43003
+        description: Metabase para dashboard y visualización de datos
+        icon: /images/metabase.png
+
+- Streaming de Datos:
+    - PySpark:
+        description: PySpark para streaming de datos
+        icon: /images/pyspark.png

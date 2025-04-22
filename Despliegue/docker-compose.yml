@@ -1,0 +1,288 @@
+services:
+
+  g3-homepage:
+    image: ghcr.io/benphelps/homepage:latest
+    container_name: g3-homepage
+    ports:
+      - 43000:3000
+    volumes:
+      - ./homepage/config:/app/config
+      - ./homepage/config/images:/app/public/images
+      
+  g3-ollama:
+      image: ollama/ollama:latest
+      container_name: g3-ollama
+      volumes:
+        - ollama_data:/root/.ollama
+      networks:
+        - net_pet
+      post_start:
+        - command: ollama pull deepseek-v2:16b
+
+  g3-chroma:
+    image: chromadb/chroma:latest
+    container_name: g3-chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - net_pet
+
+  # --- Modificaciones al Servicio g3-web ---
+  g3-web:
+    image: python:3.12-slim  
+    container_name: g3-web
+    working_dir: /app  
+    ports:
+      - "43001:8000"  
+    volumes:
+      - ./django/:/app  
+      - web_data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=g3-ollama  # Nombre del servicio Ollama
+      - CHROMA_HOST=g3-chroma  # Nombre del servicio Chroma
+    depends_on:
+      - g3-mongo
+      - g3-ollama  # Nueva dependencia
+      - g3-chroma  # Nueva dependencia
+    command: >
+      sh -c "python -m venv /opt/venv &&
+      /opt/venv/bin/pip install --no-cache-dir -r /app/init/requirements.txt &&
+      /opt/venv/bin/python manage.py runserver 0.0.0.0:8000"
+    networks:
+      - net_pet
+
+  g3-mongo:
+    image: mongo:latest
+    container_name: g3-mongo
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo/:/bbdd/
+    ports:
+      - "43002:27017"
+    networks:
+      - net_pet
+    post_start:
+      - command: mongorestore -d ondaakin /bbdd/login
+
+  g3-metabase:
+    image: metabase/metabase
+    container_name: g3-metabase
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: root
+      MB_DB_PASS: example
+      MB_DB_HOST: g3-postgres
+      MB_DB_PORT: 5432
+    ports:
+      - "43003:3000"
+    networks:
+      - net_pet
+    depends_on:
+      - g3-postgres
+
+  g3-postgres:
+    image: postgres:latest
+    container_name: g3-postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: metabase
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-backup:/postgres-backup
+    ports:
+      - "43004:5432"
+    networks:
+      - net_pet
+
+  g3-namenode:
+    image: renci/hadoop:2.9.0
+    container_name: g3-namenode
+    volumes:
+      - hadoop-public:/home/hadoop/public
+      - ./site-files:/site-files
+      - ./hdfs-upload:/hdfs-upload
+    restart: always
+    hostname: namenode
+    networks:
+      - net_pet
+    ports:
+      - '43007:50070'
+      - '9870:9870'
+    environment:
+      IS_NODE_MANAGER: 'false'
+      IS_NAME_NODE: 'true'
+      IS_SECONDARY_NAME_NODE: 'false'
+      IS_DATA_NODE: 'false'
+      IS_RESOURCE_MANAGER: 'false'
+      CLUSTER_NODES: namenode resourcemanager worker1 worker2 worker3
+        - JAVA_HOME=/usr/java/jdk1.8.0_161
+        - HADOOP_HOME=/home/hadoop/hadoop
+    working_dir: /
+    post_start:
+      - command: >
+          bash -c "sleep 5 && su - hadoop -c 'hdfs dfs -chmod -R 777 /' && 
+          su - hadoop -c 'hdfs dfs -mkdir /ondaakin' && su - hadoop -c 'hdfs dfs -mkdir /ondaakin/imagenes' &&
+          su - hadoop -c 'hdfs dfs -mkdir /ondaakin/imagenes_preprocesadas' 
+          "
+
+  g3-resourcemanager:
+    image: renci/hadoop:2.9.0
+    depends_on:
+      - g3-namenode
+    container_name: g3-resourcemanager
+    volumes:
+      - hadoop-public:/home/hadoop/public
+      - ./site-files:/site-files
+    restart: always
+    hostname: resourcemanager
+    networks:
+      - net_pet
+    ports:
+      - '43008:8088'
+    environment:
+      IS_NODE_MANAGER: 'false'
+      IS_NAME_NODE: 'false'
+      IS_SECONDARY_NAME_NODE: 'false'
+      IS_DATA_NODE: 'false'
+      IS_RESOURCE_MANAGER: 'true'
+      CLUSTER_NODES: namenode resourcemanager worker1 worker2 worker3
+        - JAVA_HOME=/usr/java/jdk1.8.0_161
+        - HADOOP_HOME=/home/hadoop/hadoop
+
+  g3-worker1:
+    image: renci/hadoop:2.9.0
+    depends_on:
+      - g3-namenode
+    container_name: g3-worker1
+    volumes:
+      - hadoop-public:/home/hadoop/public
+      - ./site-files:/site-files
+      - ./hdfs-upload:/hdfs-upload
+    restart: always
+    hostname: worker1
+    networks:
+      - net_pet
+    ports:
+      - '43009:8042'
+      - '43010:50075'
+    environment:
+      IS_NODE_MANAGER: 'true'
+      IS_NAME_NODE: 'false'
+      IS_SECONDARY_NAME_NODE: 'false'
+      IS_DATA_NODE: 'true'
+      IS_RESOURCE_MANAGER: 'false'
+      CLUSTER_NODES: namenode resourcemanager worker1 worker2 worker3
+        - JAVA_HOME=/usr/java/jdk1.8.0_161
+        - HADOOP_HOME=/home/hadoop/hadoop
+
+  g3-worker2:
+    image: renci/hadoop:2.9.0
+    depends_on:
+      - g3-namenode
+    container_name: g3-worker2
+    volumes:
+      - hadoop-public:/home/hadoop/public
+      - ./site-files:/site-files
+      - ./hdfs-upload:/hdfs-upload
+    restart: always
+    hostname: worker2
+    networks:
+      - net_pet
+    ports:
+      - '43011:8042'
+      - '43012:50075'
+    environment:
+      IS_NODE_MANAGER: 'true'
+      IS_NAME_NODE: 'false'
+      IS_SECONDARY_NAME_NODE: 'false'
+      IS_DATA_NODE: 'true'
+      IS_RESOURCE_MANAGER: 'false'
+      CLUSTER_NODES: namenode resourcemanager worker1 worker2 worker3
+        - JAVA_HOME=/usr/java/jdk1.8.0_161
+        - HADOOP_HOME=/home/hadoop/hadoop
+
+  g3-worker3:
+    image: renci/hadoop:2.9.0
+    depends_on:
+      - g3-namenode
+    container_name: g3-worker3
+    volumes:
+      - hadoop-public:/home/hadoop/public
+      - ./site-files:/site-files
+      - ./hdfs-upload:/hdfs-upload
+    restart: always
+    hostname: worker3
+    networks:
+      - net_pet
+    ports:
+      - '43013:8042'
+      - '43014:50075'
+    environment:
+      IS_NODE_MANAGER: 'true'
+      IS_NAME_NODE: 'false'
+      IS_SECONDARY_NAME_NODE: 'false'
+      IS_DATA_NODE: 'true'
+      IS_RESOURCE_MANAGER: 'false'
+      CLUSTER_NODES: namenode resourcemanager worker1 worker2 worker3
+        - JAVA_HOME=/usr/java/jdk1.8.0_161
+        - HADOOP_HOME=/home/hadoop/hadoop
+
+  g3-pyspark:
+    image: python:3.12-slim  
+    container_name: g3-pyspark
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - ./pyspark:/app  # Monta tu directorio local con los scripts
+      - ./site-files:/opt/spark/conf  # Configuración de Hadoop/Spark
+      - hadoop-public:/home/hadoop/public  # Compartir volumen con cluster Hadoop
+      - ./pyspark/local_images:/app/local_images
+      - ./pyspark/spark-3.5.5-bin-hadoop3:/opt/spark/
+    environment:
+      - PYSPARK_PYTHON=/opt/python/bin/python
+      - SPARK_MODE=client
+      - SPARK_MASTER_URL=yarn
+      - HADOOP_CONF_DIR=/opt/spark/conf
+      - YARN_CONF_DIR=/opt/spark/conf
+      - JAVA_HOME=/opt/java
+      - SPARK_HOME=/opt/spark
+      - PATH=/opt/spark/bin:/opt/python/bin:$PATH
+      - MPLCONFIGDIR=/tmp/matplotlib
+    depends_on:
+      - g3-namenode
+      - g3-resourcemanager
+    networks:
+      - net_pet
+    command: >
+      bash -c "apt-get update && apt-get install -y wget tar libgl1 libglib2.0-0 &&
+              pip install -r /app/requirements.txt &&
+              spark-submit --master local[*] /app/manage.py"
+    #post_start:
+    #  - command: bash -c "spark-submit --master local[*] /app/manage.py"
+
+networks:
+  net_pet:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.27.0.0/16
+
+volumes:
+  ollama_data: 
+    driver: local
+  chroma_data: 
+   driver: local
+  web_data:
+    driver: local
+  mongo_data:
+    driver: local
+  postgres_data:
+    driver: local
+  hadoop-public:
+    driver: local
+

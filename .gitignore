@@ -1,0 +1,9 @@
+Despliegue/django/*/__pycache__/*
+Despliegue/django/bd/vectordb_gratis_prueba/chroma.sqlite3
+RAG/Pruebas_RAG/bd/*
+Modelo/runs
+Modelo/yolo*
+Modelo/modelos_entrenados
+Despliegue/mongo/mongodb-compass_1.45.4_amd64.deb
+Despliegue/django/login/migrations/__pycache__/*
+Web/login/__pycache__/*

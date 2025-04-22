@@ -1,0 +1,191 @@
+{% extends 'base.html' %} {% block content %}
+<div class=" d-flex flex-wrap m-3">
+    <div class="col-4">
+        <div class=" d-flex flex-row justify-content-between mb-2">
+            <div class="">Fecha: {{ imagen.fecha_adquisicion }}</div>
+            <div class="">Peso: {{ imagen.peso }}Kg</div>
+        </div>
+        <form class="container" action="{% url 'foto_detalle' nombre=imagen.nombre %}" method="post">
+            {% csrf_token %}
+            {% for detec in imagen.deteccion %}
+            <div class=" d-flex flex-row justify-content-between flex-wrap">   <!-- d-flex flex-row justify-content-between -->
+                <div class="col-8 d-flex flex-row ">
+                    <select name="detec_{{ forloop.counter0 }}" class="form-select mb-2 col-10"> 
+                        {% for alimento in alimentos %}
+                            <option value="{{ alimento.nombre }}" 
+                            {% if alimento.nombre == detec.0 %}selected="selected"{% endif %}> 
+                            {{ alimento.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div id="color_{{ forloop.counter0 }}" class="col-2 mb-2 rounded"></div>   <!--  style="background-color: {{ detec.color }};" -->
+                </div>
+                <div id="pSec_{{ forloop.counter0 }}" class="col-4 text-end"></div>
+            </div>
+            {% endfor %}
+            <div class="d-flex flex-wrap justify-content-end">
+                <a href="/fotos" class="btn btn-success m-2">Guardar</a> 
+                <a href="/fotos" class="btn btn-secondary m-2">Volver</a>
+            </div>
+            <!-- para debugging 
+            <div id="cambios">
+                {% if cambios %}
+                    <div class="alert alert-info mt-3">
+                        <h5>Cambios realizados:</h5>
+                        <ul class="mb-0">
+                            {% for cam in cambios %}
+                                <li>{{ cam }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div> -->
+        </form>
+    </div>
+    <div class="col-8 d-flex align-items-center justify-content-center p-2">
+        <div class="position-relative ratio ratio-1x1" style="max-width: 100%; max-height: 60vh;">
+            <img src="{% url 'proxy_imagen' nombre_imagen=imagen.nombre %}"
+                 class="z-1 position-absolute top-50 start-50 translate-middle img-fluid object-fit-contain bg-info"
+                 style="max-height: 60vh; width: auto; transform: translate(-50%, -50%);"
+                 alt="{{ imagen.nombre }}"
+                 id="baseImage">
+            <canvas id="drawingCanvas"
+                class="z-2 position-absolute top-50 start-50 "
+                style="max-height: 60vh; width: auto; transform: translate(-50%, -50%); pointer-events: none;"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- script para dibujar las segmentaciones -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const img = document.getElementById('baseImage');
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const detecciones = {{ imagen.deteccion|safe }};    // FUNCIONA,  NO TOCAR
+        const colores = ['#ff0000','#00ff00','#0000ff','#ffff00','#ff00ff','#00ffff','8a3c00','#ffffff']; 
+        // rojo, verde, azul, amarillo, rosa, azul claro, naranja, blanco
+        console.log(detecciones);
+
+
+        // 1. Algoritmo mejorado para polígonos irregulares (incluye convexos y cóncavos)
+        function calcularAreaIrregular(puntos) {
+            let area = 0;
+            const n = puntos.length;
+            
+            // Versión optimizada del algoritmo Shoelace
+            for (let i = 0, j = n - 1; i < n; j = i++) {
+                area += (puntos[j][0] + puntos[i][0]) * (puntos[j][1] - puntos[i][1]);
+            }
+            
+            return Math.abs(area) / 2;
+        }
+
+        // 2. Función para manejar formas complejas (con auto-intersecciones)
+        function calcularAreaSegura(puntos) {
+            try {
+                // Usar el algoritmo estándar para la mayoría de casos
+                return calcularAreaIrregular(puntos);
+            } catch (e) {
+                // Fallback para formas muy complejas
+                return aproximarAreaPorPixelCount(ctx, puntos);
+            }
+        }
+
+        // 3. Método alternativo por conteo de píxeles (para formas extremadamente irregulares)
+        function aproximarAreaPorPixelCount(ctx, puntos) {
+            // Crear un canvas temporal
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Dibujar la forma
+            tempCtx.beginPath();
+            tempCtx.moveTo(puntos[0][0], puntos[0][1]);
+            for (let i = 1; i < puntos.length; i++) {
+                tempCtx.lineTo(puntos[i][0], puntos[i][1]);
+            }
+            tempCtx.closePath();
+            tempCtx.fillStyle = 'black';
+            tempCtx.fill();
+            
+            // Contar píxeles no transparentes
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            let count = 0;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                if (imageData.data[i + 3] > 0) count++;
+            }
+            
+            return count;
+        }
+
+        
+        function updateCanvas() {
+            // console.log('\n UPDATE \n')
+            //ajustar canvas al tamaño de la imagen
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.style.width = img.offsetWidth + 'px';
+            canvas.style.height = img.offsetHeight + 'px';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let i = 0;  
+            let areaTotal = 0;  // area total en píxeles de los desperdicios  
+            const areas = [];
+            
+            detecciones.forEach(detec => {
+                if (!detec[2] || detec[2].length < 3) return;
+                
+                const pixelPoints = detec[2].map(p => [p[0], p[1]]);
+                
+                // Dibujar la forma
+                ctx.fillStyle = colores[i] + '24';  // '24' transparencia
+                ctx.beginPath();
+                pixelPoints.forEach((p, idx) => idx === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = colores[i];  
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Calcular y almacenar área
+                const areaPixeles = calcularAreaSegura(pixelPoints);
+                areaTotal += areaPixeles;  
+                areas.push(areaPixeles);
+
+                // Mostrar el color en el div correspondiente
+                const colorElement = document.getElementById(`color_${i}`);
+                if (colorElement) {
+                    colorElement.style.backgroundColor = colores[i] + '66';  
+                }
+                
+                i++;  
+            });
+
+            // Mostrar los pesos de cada sección
+            for (let j = 0; j < areas.length; j++) {
+                const areaPixeles = areas[j];
+                const areaPorcentual = areaTotal > 0 ? (areaPixeles / areaTotal) * 100 : 0;
+                
+                // Calcular peso de la sección (peso total * porcentaje de área)
+                const pesoSeccion = (areaPorcentual * {{ imagen.peso|default:1 }}) / 100;
+                
+                // Mostrar el peso en el div correspondiente
+                const pesoElement = document.getElementById(`pSec_${j}`);
+                if (pesoElement) {
+                    pesoElement.textContent = `${pesoSeccion.toFixed(2)} kg`;
+                }
+                // console.log(`Sección ${j}:`, pesoSeccion);
+            }
+        }
+
+        // Inicialización
+        window.onload = updateCanvas;
+        img.onload = updateCanvas;
+        window.addEventListener('resize', updateCanvas);
+    })
+    </script>
+
+{% endblock %}
